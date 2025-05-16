@@ -1,5 +1,9 @@
 name: Deploy SQL Files
 
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
+
 on:
   push:
     paths:
@@ -12,27 +16,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Find and deploy SQL files
-        run: |
-          echo "Deploying the following SQL files:"
-          find sql -name '*.sql' -print
-          # Example: for file in $(find sql -name '*.sql'); do \
-          #   snowsql -a $ACCOUNT -u $USER -p $PASSWORD -w $WAREHOUSE -d $DATABASE -s $SCHEMA -f "$file"; \
-          # done
-        env:
-          ACCOUNT: ${{ secrets.GA_SECRETS_ACCOUNT }}
-          USER: ${{ secrets.GA_SECRETS_USER }}
-          PASSWORD: ${{ secrets.GA_SECRETS_PASSWORD }}
-          WAREHOUSE: ${{ secrets.GA_SECRETS_WAREHOUSE }}
-          DATABASE: ${{ secrets.GA_SECRETS_DATABASE }}
-          SCHEMA: ${{ secrets.GA_SECRETS_SCHEMA }}
       - name: Install snowsql
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget jq
-          wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-1.2.24-linux_x86_64.bash
-          bash snowsql-1.2.24-linux_x86_64.bash
+          set -o pipefail
+          sudo apt-get update 2>&1 | tee snowsql_install.log
+          sudo apt-get install -y wget jq 2>&1 | tee -a snowsql_install.log
+          wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-1.2.24-linux_x86_64.bash 2>&1 | tee -a snowsql_install.log
+          bash snowsql-1.2.24-linux_x86_64.bash 2>&1 | tee -a snowsql_install.log
           export PATH=$PATH:/usr/bin/snowsql
+          echo '--- SnowSQL Installation Log ---'
+          cat snowsql_install.log
       - name: Deploy SQL files with snowsql
         run: |
           echo "$GA_SECRETS" > ga_secrets.json
@@ -42,6 +35,7 @@ jobs:
           export WAREHOUSE=$(jq -r .warehouse ga_secrets.json)
           export DATABASE=$(jq -r .database ga_secrets.json)
           export SCHEMA=$(jq -r .schema ga_secrets.json)
+          export SNOWSQL_LOG_LEVEL=DEBUG
           for file in $(find sql -name '*.sql'); do
             echo "Deploying $file"
             snowsql -a "$ACCOUNT" -u "$USER" -p "$PASSWORD" -w "$WAREHOUSE" -d "$DATABASE" -s "$SCHEMA" -f "$file"
