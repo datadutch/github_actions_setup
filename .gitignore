@@ -1,0 +1,26 @@
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+ENV/
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore SQL deployment logs
+sql/*.log
+
+# Ignore Snowflake connection configs
+.snowflake/
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore node_modules
+node_modules/
+
+..venv_github_actions_setup
+config.json

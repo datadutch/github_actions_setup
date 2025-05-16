@@ -1,0 +1,28 @@
+name: Deploy SQL Files
+
+on:
+  push:
+    paths:
+      - 'sql/**/*.sql'
+  workflow_dispatch:
+
+jobs:
+  deploy-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Find and deploy SQL files
+        run: |
+          echo "Deploying the following SQL files:"
+          find sql -name '*.sql' -print
+          # Example: for file in $(find sql -name '*.sql'); do \
+          #   snowsql -a $ACCOUNT -u $USER -p $PASSWORD -w $WAREHOUSE -d $DATABASE -s $SCHEMA -f "$file"; \
+          # done
+        env:
+          ACCOUNT: ${{ secrets.GA_SECRETS_ACCOUNT }}
+          USER: ${{ secrets.GA_SECRETS_USER }}
+          PASSWORD: ${{ secrets.GA_SECRETS_PASSWORD }}
+          WAREHOUSE: ${{ secrets.GA_SECRETS_WAREHOUSE }}
+          DATABASE: ${{ secrets.GA_SECRETS_DATABASE }}
+          SCHEMA: ${{ secrets.GA_SECRETS_SCHEMA }}
